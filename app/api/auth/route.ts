@@ -1,9 +1,9 @@
+import { client } from "@/app/lib/prismaClient";
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { client } from "@/app/lib/prismaClient";
 
-// 유저 생성
+// 로그인
 export const POST = async (request: NextRequest) => {
   try {
     const { account, password } = await request.json();
@@ -25,10 +25,10 @@ export const POST = async (request: NextRequest) => {
       },
     });
 
-    if (existUser) {
+    if (!existUser) {
       return NextResponse.json(
         {
-          message: "Already exist user.",
+          message: "Not exist user.",
         },
         {
           status: 400,
@@ -36,20 +36,18 @@ export const POST = async (request: NextRequest) => {
       );
     }
 
-    const hashedPassword = bcrypt.hashSync(password, 10);
+    const isVerified = bcrypt.compareSync(password, existUser.password);
 
-    await client.user.create({
-      data: {
-        account,
-        password: hashedPassword,
-      },
-      select: {
-        id: true,
-        createdAt: true,
-        updatedAt: true,
-        account: true,
-      },
-    });
+    if (!isVerified) {
+      return NextResponse.json(
+        {
+          message: "Not correct password.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
 
     const token = jwt.sign({ account }, process.env.JWT_SECRET!);
 
