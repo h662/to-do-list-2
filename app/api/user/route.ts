@@ -2,6 +2,27 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { client } from "@/app/lib/prismaClient";
+import { verifyToken } from "@/app/lib/verifyToken";
+
+// 유저 조회
+export const GET = async (request: NextRequest) => {
+  try {
+    const user = await verifyToken(request);
+
+    return NextResponse.json(user.account);
+  } catch (error) {
+    console.error(error);
+
+    return NextResponse.json(
+      {
+        message: "Server Error.",
+      },
+      {
+        status: 500,
+      }
+    );
+  }
+};
 
 // 유저 생성
 export const POST = async (request: NextRequest) => {
@@ -42,12 +63,6 @@ export const POST = async (request: NextRequest) => {
       data: {
         account,
         password: hashedPassword,
-      },
-      select: {
-        id: true,
-        createdAt: true,
-        updatedAt: true,
-        account: true,
       },
     });
 
